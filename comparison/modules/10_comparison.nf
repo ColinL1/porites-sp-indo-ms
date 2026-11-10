@@ -1,46 +1,36 @@
 // ============================================================
 // 10_comparison.nf
-// Processes for the Porites comparative analysis (porites_compare.nf):
-// reduce an annotated NCBI genome to bare gene models for re-annotation with
-// stage 08, and run `funannotate compare`. The NCBI download itself is done by
-// comparison/run_compare.sh with the site's `ncbi_datasets` conda env (the
-// biocontainers ncbi-datasets-cli image is too old for the current NCBI API).
-//
-// Resources are declared here rather than in process_resource.config: these
-// processes are not part of main.nf and the selectors there would be unused.
+// Processes of the Porites comparative analysis (main.nf): reduce an annotated genome to bare
+// gene models for re-annotation with the functional annotation (08_functional_annotation.nf),
+// and run `funannotate compare`. Every process takes the genome name (sp) as an input, so all
+// genomes run in one Nextflow run. Resources: process_resource.config.
 // ============================================================
 
 nextflow.enable.dsl = 2
 
 // ============================================================
 // Process: PREP_REF_ANNOTATION
-// NCBI FASTA/GFF3 -> the inputs stage 08 expects: sequence names of at most
+// Genome FASTA/GFF3 -> the inputs funannotate annotate expects: sequence names of at most
 // 16 characters and a GFF3 holding only gene models (see bin/ncbi_ref_prep.pl).
-// Isoforms are kept as delivered, as they are for the pipeline's own annotation.
+// Isoforms are kept as delivered. Used for every genome, the new one included.
 // ============================================================
 process PREP_REF_ANNOTATION {
-    tag   "${params.species_name}"
-    cpus   4
-    memory 32.GB
-    time   6.h
+    tag   "${sp}"
 
     conda 'bioconda::agat=1.7.0'
     container 'quay.io/biocontainers/agat:1.7.0--pl5321hdfd78af_0'
-    publishDir "${params.outdir}/01_prepared", mode: params.publish_mode
 
     input:
-    path fasta
-    path gff
+    tuple val(sp), path(fasta), path(gff)
 
     output:
-    path "${params.species_name}.genome.fa",    emit: assembly
-    path "${params.species_name}.models.gff3",  emit: gff3
-    path "${params.species_name}.seqmap.tsv",   emit: seqmap
-    path "${params.species_name}.prep_summary.txt", emit: summary
+    tuple val(sp), path("${sp}.genome.fa"),   emit: assembly
+    tuple val(sp), path("${sp}.models.gff3"), emit: gff3
+    path "${sp}.seqmap.tsv", emit: seqmap
+    path "${sp}.prep_summary.txt", emit: summary
     path "versions.yml", emit: versions
 
     script:
-    def sp = params.species_name
     """
     ncbi_ref_prep.pl fasta ${fasta} ${sp}.genome.fa ${sp}.seqmap.tsv
 
@@ -59,7 +49,6 @@ process PREP_REF_ANNOTATION {
     """
 
     stub:
-    def sp = params.species_name
     """
     touch ${sp}.genome.fa ${sp}.models.gff3 ${sp}.seqmap.tsv ${sp}.prep_summary.txt
 
@@ -79,26 +68,20 @@ process PREP_REF_ANNOTATION {
 // Genes left without any transcript are removed with them.
 // ============================================================
 process DROP_UNTRANSLATABLE {
-    tag   "${params.species_name}"
-    cpus   2
-    memory 8.GB
-    time   2.h
+    tag   "${sp}"
 
     conda 'bioconda::gffread=0.12.7'
     container 'https://depot.galaxyproject.org/singularity/gffread:0.12.7--hdcf5f25_4'
-    publishDir "${params.outdir}/01_prepared", mode: params.publish_mode
 
     input:
-    path gff3
-    path assembly
+    tuple val(sp), path(gff3), path(assembly)
 
     output:
-    path "${params.species_name}.gff3",                emit: gff3
-    path "${params.species_name}.untranslatable.txt",  emit: dropped
+    tuple val(sp), path("${sp}.gff3"), emit: gff3
+    path "${sp}.untranslatable.txt", emit: dropped
     path "versions.yml", emit: versions
 
     script:
-    def sp = params.species_name
     """
     gffread ${gff3} -g ${assembly} -y all_models.faa
     awk '/^>/{id=substr(\$1,2); next} /\\./{print id}' all_models.faa | sort -u > ${sp}.untranslatable.txt
@@ -131,7 +114,6 @@ process DROP_UNTRANSLATABLE {
     """
 
     stub:
-    def sp = params.species_name
     """
     touch ${sp}.gff3 ${sp}.untranslatable.txt
 
@@ -144,53 +126,31 @@ process DROP_UNTRANSLATABLE {
 
 // ============================================================
 // Process: FUNANNOTATE_GENE_IDS
-// Reshape gene IDs for `funannotate annotate`. Before merging its annotation
-// sources it keeps only lines that start with a "base" it derives from each
-// protein header "<transcript> <gene>" (library.getGeneBasename): with a "_" in
-// the gene ID the base is everything up to the first "_" of the whole header,
-// which spans the space and matches nothing -- every Pfam/InterPro/eggNOG/GO
-// annotation is then dropped silently ("adding 0 valid annotations"). NCBI
-// locus tags (gene-ABFA07_000001) hit exactly that. With "-" and no "_" in the
-// gene ID the base is the transcript's own prefix (rna), which always matches.
-// Transcript IDs are left alone, so the proteins and every search run on them
-// stay valid.
+// Reshape gene IDs for `funannotate annotate`, which silently drops every Pfam/InterPro/eggNOG/GO
+// annotation ("adding 0 valid annotations") when the gene ID does not fit the base it derives from
+// each protein header "<transcript> <gene>". Rules and the two ID styles handled (NCBI "rna-...",
+// funannotate "g1.t2"): bin/funannotate_gene_ids.sh. Transcript IDs are left alone.
 // ============================================================
 process FUNANNOTATE_GENE_IDS {
-    tag   "${params.species_name}"
-    cpus   1
-    memory 4.GB
-    time   1.h
+    tag   "${sp}"
 
     conda 'bioconda::gffread=0.12.7'
     container 'https://depot.galaxyproject.org/singularity/gffread:0.12.7--hdcf5f25_4'
-    publishDir "${params.outdir}/01_prepared", mode: params.publish_mode
 
     input:
-    path gff3
+    tuple val(sp), path(gff3)
 
     output:
-    path "${params.species_name}.funannotate.gff3", emit: gff3
+    tuple val(sp), path("${sp}.funannotate.gff3"), emit: gff3
 
     script:
     """
-    awk -F'\\t' -v OFS='\\t' '
-      function fix(id) { gsub(/_/, ".", id); if (id !~ /-/) id = "gene-" id; return id }
-      /^#/ { print; next }
-      \$3 == "gene" { \$9 = "ID=" fix(substr(\$9, 4)); print; next }
-      \$3 == "mRNA" || \$3 == "tRNA" || \$3 == "rRNA" {
-          n = split(\$9, a, ";")
-          if (a[1] !~ /^ID=[^;]*-/) { print "transcript ID without a dash: " a[1] > "/dev/stderr"; exit 1 }
-          a[2] = "Parent=" fix(substr(a[2], 8))
-          \$9 = a[1]; for (i = 2; i <= n; i++) \$9 = \$9 ";" a[i]
-          print; next
-      }
-      { print }
-    ' ${gff3} > ${params.species_name}.funannotate.gff3
+    funannotate_gene_ids.sh ${gff3} > ${sp}.funannotate.gff3
     """
 
     stub:
     """
-    touch ${params.species_name}.funannotate.gff3
+    touch ${sp}.funannotate.gff3
     """
 }
 
@@ -201,16 +161,9 @@ process FUNANNOTATE_GENE_IDS {
 // ============================================================
 process FUNANNOTATE_COMPARE {
     tag   "funannotate_compare"
-    // proteinortho's all-vs-all search is the parallel part; the run has the node
-    // to itself by default (params.compare_cpus)
-    // (params set in the entry script do not reach an included module, hence the defaults here)
-    cpus   { (params.compare_cpus ?: 240) as int }
-    memory { 256.GB * task.attempt }
-    time   { 96.h * task.attempt }
 
-    conda 'bioconda::funannotate'
+    conda 'bioconda::funannotate=1.8.17'
     container 'quay.io/biocontainers/funannotate:1.8.17--pyhdfd78af_5'
-    publishDir "${params.outdir}", mode: params.publish_mode
 
     input:
     path gbks
@@ -222,15 +175,15 @@ process FUNANNOTATE_COMPARE {
     path "versions.yml",        emit: versions
 
     script:
-    // By default compare runs `proteinortho -synteny` itself. On fragmented
-    // assemblies that synteny (FFAdj-MCS) step does not finish: after 2.5 h only the
-    // 3 pairs involving the chromosome-level P. lutea were done, one job had found
-    // 190 million candidate runs and the 12 jobs held 340 GB. A table made without
-    // -synteny (comparison/proteinortho_nosynteny.sh) can be handed in instead.
+    // Without a table, compare runs `proteinortho -synteny` itself (params.compare_synteny). On
+    // fragmented assemblies that synteny (FFAdj-MCS) step did not finish: after 2.5 h only the
+    // 3 pairs involving the chromosome-level P. lutea were done, one job had found 190 million
+    // candidate runs and the 12 jobs held 340 GB. A table made without -synteny can be handed in
+    // instead (params.compare_proteinortho).
     def po_arg = proteinortho_tsv.name.startsWith('NO_') ? '' : "--proteinortho ${proteinortho_tsv}"
-    // --ml_method raxml: the image ships RAxML but not IQ-TREE (compare's
-    // default). No --run_dnds: codeml is not in the image either. No --outgroup:
-    // FUNANNOTATE_DB/outgroups only holds fungal BUSCO sets.
+    // --ml_method raxml: the image ships RAxML but not IQ-TREE (compare's default).
+    // No --run_dnds: codeml is not in the image either.
+    // No --outgroup: FUNANNOTATE_DB/outgroups only holds fungal BUSCO sets.
     """
     export FUNANNOTATE_DB=\$(readlink -f ${funannotate_db})
 
@@ -239,7 +192,7 @@ process FUNANNOTATE_COMPARE {
       -o funannotate_compare \\
       --ml_method raxml \\
       ${po_arg} \\
-      --num_orthos ${params.compare_num_orthos ?: 500} \\
+      --num_orthos ${params.compare_num_orthos} \\
       --cpus ${task.cpus}
 
     cat <<-END_VERSIONS > versions.yml
