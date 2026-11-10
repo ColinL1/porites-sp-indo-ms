@@ -1,35 +1,28 @@
-# porites-sp-indo-ms
+# Porites sp. Indonesia: genome assembly and annotation
 
-Analysis and manuscript repository for the *Porites* sp. Indonesia genome assembly and annotation.
+Analyses for the manuscript:
 
-The assembly and annotation pipeline is a separate repository (**GenomeMaker**) and stays independent. This
-repository holds the assembly-specific analyses of the manuscript; they read the pipeline results
-(`results_v1.2`) through untracked links in `data/`.
+> [Authors]. [Title: de novo genome assembly and annotation of *Porites* sp. Indonesia]. [Journal / preprint server], [year]. [DOI]
 
-| Folder | Question | Method | Run |
-|---|---|---|---|
-| `comparison/` | how does the assembly and annotation compare with other *Porites*? | re-annotation of the NCBI genomes with the pipeline's stage 08, `funannotate compare` | `comparison/run_compare.sh` (Nextflow `main.nf`) |
-| `species_tree/` | where does the new genome sit among *Porites*? | BUSCO single-copy proteins: concatenated ML (IQ-TREE) and coalescent (ASTRAL-IV) | `nextflow run species_tree/main.nf` |
-| `introgression/` | is it a *P. lobata* x *P. harrisoni* hybrid? | ONT phasing and ancestry painting, D-statistics, Twisst, HyDe, PCA/ADMIXTURE, mitogenome tree | `nextflow run introgression/main.nf -params-file ...` |
-| `genome-assembly-annotation/` | the pipeline | link to GenomeMaker `results_v1.2` | |
-| `data/` | inputs outside the repo | untracked links, see `data/README.md` | |
-| `docs/` | repository notes | `docs/CLEANUP.md`: what is redundant | |
+| | |
+|---|---|
+| Organism | *Porites* sp. Indonesia (NCBI taxid 3903096), isolate ID_GA_Por_15 |
+| BioProject / BioSample | PRJNA1548328 / SAMN49911241 |
+| Genome accession | [GenBank assembly accession, pending] |
+| Assembly release | v1.2 |
 
-Each analysis folder has a `README.md` with what it needs, how to run it, its parameters and its results.
-The introgression tests take (*P. lobata*, *P. harrisoni*) + the new genome as the species tree, from the
-outgroup-rooted BUSCO trees of `species_tree/` (outgroups *P. cylindrica*, *P. australiensis*,
-*P. divaricata*). `comparison/` is independent of the other two.
+The genome was assembled and annotated from Oxford Nanopore reads with the
+[GenomeMaker](https://github.com/ColinL1/GenomeMaker) pipeline. This repository holds the analyses that
+place the genome in context.
 
-## Setup
+## Analyses
 
-1. Link the pipeline results and the other inputs as in `data/README.md`.
-2. Tools: Nextflow, Apptainer (introgression, comparison), conda env `phylo` (species_tree), conda env
-   `ncbi_datasets` (comparison download).
-3. Large outputs (`results/`, `refs/`, `compare_*/`, `work/`, genomes, alignments) are written inside the
-   analysis folders and are git-ignored; small trees, tables and reports under `archive/` are tracked.
+| Folder | Question | Approach |
+|---|---|---|
+| [comparison](comparison/) | How do the assembly and annotation compare with other *Porites*? | The annotated NCBI *Porites* genomes (and *Acropora millepora* as outgroup) are re-annotated with the same functional annotation as ours, then compared with `funannotate compare` |
+| [species_tree](species_tree/) | Where does the new genome sit among *Porites* species? | Single-copy BUSCO proteins: concatenated maximum likelihood (IQ-TREE) and coalescent (ASTRAL-IV) trees, rooted on *Acropora muricata* |
+| [introgression](introgression/) | Is it a hybrid of *P. lobata* and *P. harrisoni*? | Phased heterozygous variants and ancestry painting, D-statistics, topology weighting (Twisst), HyDe, PCA/ADMIXTURE and a mitogenome tree, with *P. cylindrica*, *P. australiensis* and *P. divaricata* as outgroups |
 
-## Layout rules
+The introgression tests use the species tree (*P. lobata*, *P. harrisoni*) plus the new genome. The comparison is independent of the other two.
 
-- Pipeline code is never edited here; `comparison/` imports it from `data/GenomeMaker`.
-- Earlier runs on superseded assemblies (Canu, Flye) are in each folder's `archive/`.
-- No host-absolute paths in code: paths are params relative to `data/`.
+Each folder has its own README with inputs, how to run it and its parameters.
