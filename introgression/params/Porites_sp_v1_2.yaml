@@ -1,0 +1,13 @@
+# Final assembly (GenomeMaker results_v1.2). Launch from introgression/:
+#   nextflow run main.nf -params-file params/Porites_sp_v1_2.yaml
+# Paths are relative to the launch directory; ../data/ holds links (see ../data/README.md).
+new_name: Porites_sp_v1_2
+new_fasta: ../data/results_v1.2/final/genome/Porites_sp.fa
+new_mito: ../data/results_v1.2/final/mitogenome/mitogenome.fasta
+# TODO(owner): join test needs the AGP that matches the scaffold names of final/genome/Porites_sp.fa
+# (candidates: 03e_gapfill/gapfilled.agp + final/genome/scaffold_name_map.tsv); null = join test skipped
+agp: null
+# ONT reads of the same individual (Porechop-trimmed); link them to ../data/ont_reads.fastq.gz
+reads: ../data/ont_reads.fastq.gz
+min_scaffold_len: 10000000
+outdir: results/Porites_sp_v1_2_nf
