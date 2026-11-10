@@ -113,6 +113,3 @@ Thumbs.db
 *.key
 *credentials*
 .netrc
-
-# ---- small inputs that the rules above would catch ----
-!**/mitogenomes/*.fasta
