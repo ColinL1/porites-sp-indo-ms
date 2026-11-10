@@ -1,112 +1,80 @@
-# =====================================================================
-# porites-sp-indo-ms: code, params, docs and small result tables are tracked.
-# Everything produced by a run, and every genome-sized file, is not.
-# =====================================================================
+# porites-sp-indo-ms: tracked = code, params, reference tables, docs.
+# Not tracked = run outputs, archived runs, data links, genome-sized files.
 
-# ---- Nextflow ----------------------------------------------------------
+# ---- archived earlier runs and review leftovers (any depth) ----
+archive/
+_review*/
+
+# ---- run outputs (any depth) ----
+results/
+results_*/
+refs/
+compare_*/
+*_work/
+_intermediate/
+tmp/
+
+# ---- Nextflow ----
 work/
 .nextflow/
 .nextflow.log*
-nextflow.log*
 pipeline_info/
 trace*.txt
-trace*.tsv
 timeline*.html
 report*.html
 dag*.html
-*.dag.*
-.nf-test/
-.nf-test.log
 null/
 
-# ---- run outputs and scratch directories --------------------------------
-results/
-results_*/
-*_work/
-_intermediate/
-_review*/
-refs/
-compare_*/
-tmp/
-scratch/
-runs_local/
-
-# ---- data: links to GenomeMaker/results_v1.2 and downloads ---------------
+# ---- data: links to GenomeMaker results and external inputs ----
 data/*
 !data/README.md
 genome-assembly-annotation/*
 !genome-assembly-annotation/README.md
-# any symlink target is a host path
-*.lnk
 
-# ---- genomic and sequencing data (large, reproducible) -------------------
+# ---- genomic and sequencing data ----
 *.fa
 *.fasta
 *.fna
 *.faa
-*.fas
-*.fa.gz
-*.fasta.gz
-*.fna.gz
 *.fai
 *.gbk
 *.gbff
-*.gb
 *.gff
 *.gff3
 *.gtf
-*.gff.gz
-*.gff3.gz
-*.bed.gz
 *.fastq
-*.fastq.gz
 *.fq
-*.fq.gz
 *.bam
 *.bai
-*.csi
 *.cram
-*.crai
 *.sam
 *.paf
-*.paf.gz
 *.vcf
-*.vcf.gz
 *.bcf
 *.tbi
+*.csi
 *.pod5
-*.fast5
-*.2bit
 *.agp
 *.tbl
 *.sqn
 *.sbt
+*.gz
 *.zip
 *.tar
-*.tar.gz
-*.tgz
-*.gz
 *.bz2
 *.xz
 *.zst
 
-# ---- containers and databases --------------------------------------------
+# ---- containers and databases ----
 *.sif
 *.simg
-*.img
-**/containers/*.log
 *.dmnd
 *.hmm
-*.hmm.h3*
-*.phr
-*.pin
-*.psq
 busco_downloads/
 
-# ---- phylogenetics bulk outputs (alignments, gene trees, checkpoints) ----
+# ---- phylogenetics bulk output ----
 supermatrix*
 trimmed*/
-trimmed_alignments/
 alignments/
 loci/
 gene_trees/
@@ -115,102 +83,36 @@ gene_trees/
 *.ckp.gz
 *.bionj
 *.mldist
-*.splits.nex
-*.uniqueseq.phy
-*.model.gz
-*.boottrees
-*.rate
-*.state
-*.sitelh
-*.treels
-*.parstree
 *.ufboot
-admixture_*.out
-*.P
-*.Q.bak
+*.boottrees
 
-# ---- logs and run babysitting --------------------------------------------
+# ---- logs ----
 *.log
 *.out
 *.err
-*.flag
-.gate_stop.flag
-STATUS.log
 logs/
 nohup.out
 screenlog.*
-*.pid
 
-# ---- language / editor / OS cruft ----------------------------------------
+# ---- language, editor, OS ----
 __pycache__/
 *.py[cod]
 .Rhistory
 .RData
 .Rproj.user/
 .ipynb_checkpoints/
-.pytest_cache/
-.ruff_cache/
-.venv/
-venv/
-.conda/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
 .vscode/
 .idea/
-.claude/
+.DS_Store
+Thumbs.db
 
-# ---- secrets and credentials ---------------------------------------------
+# ---- secrets ----
 .env
 .env.*
 *.pem
 *.key
 *credentials*
-*.token
-*secret*
-ncbi_api_key*
 .netrc
 
-# ---- re-include the small things that ARE tracked ------------------------
-# inputs / param tables
-!references*.tsv
-!genomes*.tsv
-!**/params/*.yaml
-!**/params/*.yml
-!**/configs/*.sh
-# small mitogenome inputs (about 19 kb each)
+# ---- small inputs that the rules above would catch ----
 !**/mitogenomes/*.fasta
-!**/mitogenomes/README.md
-# container recipes and code
-!**/containers/*.def
-!**/bin/**
-bin/__pycache__/
-# archived earlier runs: trees, tables, plots and reports only
-!**/archive/
-!**/archive/**/*.treefile
-!**/archive/**/*.contree
-!**/archive/**/*.tre
-!**/archive/**/*.iqtree
-!**/archive/**/partitions.txt
-!**/archive/**/commands.sh
-!**/archive/**/shared_genes.txt
-!**/archive/**/*.tsv
-!**/archive/**/*.txt
-!**/archive/**/*.md
-!**/archive/**/*.MD
-!**/archive/**/*.png
-!**/archive/**/*.csv.gz
-!**/archive/**/*.log
-**/archive/**/supermatrix*
-**/archive/**/trimmed*/
-# small published summary tables of the current analyses
-!**/tables/*.tsv
-!docs/**
-
-# symlinks to host paths inside archived runs
-**/archive/**/logs
-**/archive/**/scripts
-**/archive/**/source_dir
-**/archive/**/trimmed_alignments
