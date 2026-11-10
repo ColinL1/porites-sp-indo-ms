@@ -1,0 +1,8 @@
+# The four annotated NCBI Porites plus one outgroup for the second compare run
+# (Acropora millepora: RefSeq, same 'complex' clade, chosen 2026-10-09).
+# accession	species_name (no spaces; becomes the funannotate -s name)
+GCA_040938025.2	Porites_harrisoni
+GCF_958299795.1	Porites_lutea
+GCA_942486025.1	Porites_evermanni
+GCA_942486035.1	Porites_lobata
+GCF_013753865.1	Acropora_millepora
