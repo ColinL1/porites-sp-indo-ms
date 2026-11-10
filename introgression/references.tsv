@@ -1,0 +1,8 @@
+name	fasta	preset	role	species	mito
+Plobata1	@REF_DIR@/Plobata1_GCA_973946955.1.fna	asm10	parent1	lobata	@MITO_DIR@/OZ316978.1.fasta
+Plobata2	@REF_DIR@/Plobata2_GCA_942486035.1.fna	asm10	extra	lobata	@MITO_DIR@/NC_030186.1.fasta
+Pharrisoni	@REF_DIR@/Pharrisoni_GCA_040938025.2.fna	asm10	parent2	harrisoni	@MITO_DIR@/CM137701.1.fasta
+Pcylindrica1	@REF_DIR@/Pcylindrica1_GCA_964035525.1.fna	asm10	outgroup	cylindrica	@MITO_DIR@/OZ037789.1.fasta
+Pdivaricata2	@REF_DIR@/Pdivaricata2_GCA_964035745.1.fna	asm20	outgroup	divaricata	@MITO_DIR@/OZ038022.1.fasta
+Paustraliensis	@REF_DIR@/Paustraliensis_GCA_022179025.1.fna	asm10	outgroup	australiensis	@MITO_DIR@/LC605627.1.fasta
+Plutea2	@REF_DIR@/Plutea2_GCF_958299795.1.fna	asm10	extra	lutea	@MITO_DIR@/OY283138.1.fasta
