@@ -1,113 +1,102 @@
 // ============================================================
-// comparison/main.nf — Porites comparative analysis (funannotate compare)
+// comparison/main.nf -- the new Porites genome against other annotated genomes
 // ============================================================
-// Separate from the assembly / annotation pipeline (GenomeMaker), which it only imports from.
 //
-//   --step annotate_ref   Re-annotate the gene models of ONE annotated NCBI genome
-//                         with the pipeline's own stage 08 (Phobius, InterProScan,
-//                         eggNOG-mapper, funannotate annotate), so it carries the
-//                         same evidence as the pipeline's genome.
-//                         Needs --ref_fasta, --ref_gff (NCBI genomic.fna / .gff)
-//                         and --species_name.
+//   nextflow run main.nf -params-file params/Porites_sp_v1_2.yaml
+//   nextflow run main.nf -params-file params/Porites_sp_v1_2.yaml -profile stub -stub    (wiring test)
+//   nextflow run main.nf -params-file params/Porites_sp_v1_2_binac2.yaml -profile binac2 (BinAC 2)
 //
-//   --step compare        funannotate compare over --compare_gbks (comma-separated
-//                         funannotate GenBank files). --compare_proteinortho <tsv>
-//                         hands in a precomputed ProteinOrtho table.
+// Every genome listed under `genomes:` in the params file (the new one by fasta + gff, the NCBI
+// references by accession or by fasta + gff) goes through the same steps, in parallel:
+//   NCBI download (accession only) -> gene-model prep -> drop untranslatable mRNAs -> proteins
+//   -> eggNOG-mapper / InterProScan / Phobius -> funannotate annotate
+// so that every genome carries the same functional evidence. `funannotate compare` then runs once
+// over all GenBank files. Results go to <outdir>/<NN_step>/, laid out by the output block at the
+// end of this file.
 //
-// Stage 08 is single-genome (fixed output names, params.species_name), so the
-// reference genomes are annotated one run each rather than as one channel.
-// Launch from a directory of its own, never the repo root, so that .nextflow/
-// and work/ stay apart from the main pipeline's cache -- see
-// run_compare.sh.
-//
-// projectDir is this folder: nextflow.config points the stage-08 databases at GenomeMaker and
-// assets/ holds the three placeholder files the stage-08 subworkflow looks up in projectDir.
-// ============================================================
+// Stage 07/08 modules are copies of GenomeMaker's (modules/), with the genome name as an input;
+// nothing is imported from GenomeMaker at run time.
 
 nextflow.enable.dsl = 2
 
-// Stage 08 and the protein extraction come from the GenomeMaker pipeline, reached through the
-// link data/GenomeMaker (see ../data/README.md); nothing of the pipeline is copied or edited here.
-include { PREP_REF_ANNOTATION; DROP_UNTRANSLATABLE; FUNANNOTATE_GENE_IDS; FUNANNOTATE_COMPARE } from './modules/10_comparison.nf'
-include { EXTRACT_PROTEINS }      from '../data/GenomeMaker/modules/07_structural_annotation.nf'
-include { FUNCTIONAL_ANNOTATION } from '../data/GenomeMaker/subworkflows/08_functional_annotation.nf'
+include { NCBI_DOWNLOAD } from './modules/ncbi_download.nf'
+include { ANNOTATE_REF } from './subworkflows/annotate_ref.nf'
+include { COMPARE } from './subworkflows/compare.nf'
 
-params.step               = null
-params.ref_fasta          = null
-params.ref_gff            = null
-params.compare_gbks       = null
-// false only to resume a run made before DROP_UNTRANSLATABLE existed (P. harrisoni)
-params.drop_untranslatable = true
-params.compare_num_orthos = 500
-params.compare_cpus       = 240
-params.compare_proteinortho = null
-
-workflow ANNOTATE_REF {
+workflow {
 
     main:
-        if (!params.ref_fasta || !params.ref_gff) {
-            error "--step annotate_ref needs --ref_fasta, --ref_gff and --species_name"
+        def genomes = (params.genomes ?: []) as List
+        def extra_gbks = (params.compare_gbks ?: []) as List
+
+        // ---- validate the genome list before anything starts
+        def names = [] as List
+        genomes.each { g ->
+            if (!g.name || !(g.name.toString() ==~ /[A-Za-z0-9_]+/)) {
+                error "each genome needs a `name` of letters, digits and '_' (funannotate -s name), got: ${g}"
+            }
+            if (!g.accession && !(g.fasta && g.gff)) {
+                error "genome ${g.name}: give either `accession` or both `fasta` and `gff`"
+            }
+            if (g.name in names) {
+                error "genome name used twice: ${g.name}"
+            }
+            names << g.name
+        }
+        if (genomes.size() + extra_gbks.size() < 2) {
+            error "funannotate compare needs at least two genomes (params.genomes plus params.compare_gbks), got ${genomes.size() + extra_gbks.size()}"
         }
 
         def funodb_ch   = channel.value(file(params.funannotate_db, checkIfExists: true))
         def eggnogdb_ch = channel.value(file(params.eggnog_db, checkIfExists: true))
 
-        PREP_REF_ANNOTATION(
-            channel.value(file(params.ref_fasta, checkIfExists: true)),
-            channel.value(file(params.ref_gff, checkIfExists: true))
-        )
-        // `--drop_untranslatable false` on the command line arrives as the string 'false'
-        def models_gff = PREP_REF_ANNOTATION.out.gff3
-        if (params.drop_untranslatable && params.drop_untranslatable.toString() != 'false') {
-            DROP_UNTRANSLATABLE(PREP_REF_ANNOTATION.out.gff3, PREP_REF_ANNOTATION.out.assembly)
-            models_gff = DROP_UNTRANSLATABLE.out.gff3
-        }
-        EXTRACT_PROTEINS(models_gff, PREP_REF_ANNOTATION.out.assembly)
-        // gene IDs only; transcript IDs (and so the proteins above) are unchanged
-        FUNANNOTATE_GENE_IDS(models_gff)
+        // ---- inputs: paths as given, or downloaded by accession
+        def local_ch = channel.fromList(genomes.findAll { g -> g.fasta && g.gff })
+            .map { g -> tuple(g.name.toString(), file(g.fasta, checkIfExists: true), file(g.gff, checkIfExists: true)) }
+        def download_ch = channel.fromList(genomes.findAll { g -> !(g.fasta && g.gff) })
+            .map { g -> tuple(g.name.toString(), g.accession.toString()) }
+        NCBI_DOWNLOAD(download_ch)
+        def genomes_ch = local_ch.mix(NCBI_DOWNLOAD.out.genome)
 
-        FUNCTIONAL_ANNOTATION(
-            PREP_REF_ANNOTATION.out.assembly,
-            FUNANNOTATE_GENE_IDS.out.gff3,
-            EXTRACT_PROTEINS.out.proteins_faa,
-            funodb_ch,
-            eggnogdb_ch
-        )
+        // ---- same annotation for every genome
+        ANNOTATE_REF(genomes_ch, funodb_ch, eggnogdb_ch)
+
+        // ---- compare: the new annotations plus any ready-made funannotate GenBank files
+        def gbk_ch = ANNOTATE_REF.out.gbk
+            .map { _sp, gbk -> gbk }
+            .mix(channel.fromList(extra_gbks).map { p -> file(p, checkIfExists: true) })
+        COMPARE(gbk_ch, funodb_ch)
+
+    // what is published, by output name; where each output goes: the output block below
+    publish:
+    inputs       = channel.value(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(params)))
+                       .collectFile(name: 'params.json')
+    ncbi         = NCBI_DOWNLOAD.out.genome
+    prepared     = ANNOTATE_REF.out.prepared
+    seqmap       = ANNOTATE_REF.out.seqmap.mix(ANNOTATE_REF.out.prep_summary)
+    proteins     = ANNOTATE_REF.out.proteins
+    eggnog       = ANNOTATE_REF.out.eggnog
+    iprscan      = ANNOTATE_REF.out.iprscan
+    phobius      = ANNOTATE_REF.out.phobius
+    annotation   = ANNOTATE_REF.out.annotate_dir
+    stats        = ANNOTATE_REF.out.stats_json
+    compare      = COMPARE.out.compare_dir
 }
 
-workflow COMPARE {
-
-    main:
-        if (!params.compare_gbks) {
-            error "--step compare needs --compare_gbks (comma-separated funannotate .gbk files)"
-        }
-        def gbks = params.compare_gbks.toString().split(',')
-            .collect { p -> p.trim() }.findAll { p -> p }
-            .collect { p -> file(p, checkIfExists: true) }
-        if (gbks.size() < 2) {
-            error "funannotate compare needs at least two genomes, got ${gbks.size()}"
-        }
-
-        // optional: a ProteinOrtho table computed without -synteny (see the module)
-        def po_tsv = params.compare_proteinortho
-            ? file(params.compare_proteinortho, checkIfExists: true)
-            : file("${projectDir}/assets/NO_FILE", checkIfExists: true)
-
-        FUNANNOTATE_COMPARE(
-            channel.value(gbks),
-            channel.value(file(params.funannotate_db, checkIfExists: true)),
-            channel.value(po_tsv)
-        )
-}
-
-workflow {
-    if (params.step == 'annotate_ref') {
-        ANNOTATE_REF()
-    }
-    else if (params.step == 'compare') {
-        COMPARE()
-    }
-    else {
-        error "Set --step annotate_ref or --step compare (got: ${params.step})"
-    }
+// ---------------------------------------------------------------- published results
+// One entry per output of the publish: section above. Paths are relative to outputDir
+// (params.outdir, nextflow.config); a closure gets one channel value and returns its folder.
+// Change a folder here, nowhere else. Files are copied (workflow.output.mode).
+output {
+    inputs       { path '00_inputs' }
+    ncbi         { path '00_inputs/ncbi' }
+    prepared     { path { sp, _files -> "01_prepared/${sp}" } }
+    seqmap       { path '01_prepared' }
+    proteins     { path { sp, _files -> "02_proteins/${sp}" } }
+    eggnog       { path { sp, _files -> "03_functional_annotation/${sp}/eggnog" } }
+    iprscan      { path { sp, _files -> "03_functional_annotation/${sp}/interproscan" } }
+    phobius      { path { sp, _files -> "03_functional_annotation/${sp}/phobius" } }
+    annotation   { path { sp, _files -> "03_functional_annotation/${sp}/funannotate" } }
+    stats        { path { sp, _files -> "03_functional_annotation/${sp}/funannotate" } }
+    compare      { path '04_compare' }
 }
