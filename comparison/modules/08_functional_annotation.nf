@@ -211,7 +211,7 @@ process FUNANNOTATE_ANNOTATE {
     def ipr_arg = (iprscan_xml     && !iprscan_xml.baseName.startsWith('NO_'))     ? "--iprscan ${iprscan_xml}"     : ""
     def pho_arg = (phobius_results && !phobius_results.baseName.startsWith('NO_')) ? "--phobius ${phobius_results}" : ""
     // --force: keep scaffolds using fewer than 4 bases, which funannotate otherwise refuses
-    def force_arg = params.funannotate_force ? '--force' : ''
+    def force_arg = params.funannotate_force.toString().toBoolean() ? '--force' : ''
     """
     export FUNANNOTATE_DB=\$(readlink -f ${funannotate_db})
 

@@ -29,7 +29,7 @@ workflow ANNOTATE_REF {
 
         // drop_untranslatable: false only to resume an annotation made before this step existed
         def models = PREP_REF_ANNOTATION.out.gff3
-        if (params.drop_untranslatable) {
+        if (params.drop_untranslatable.toString().toBoolean()) {
             DROP_UNTRANSLATABLE(PREP_REF_ANNOTATION.out.gff3.join(PREP_REF_ANNOTATION.out.assembly))
             models = DROP_UNTRANSLATABLE.out.gff3
         }
@@ -56,7 +56,7 @@ workflow ANNOTATE_REF {
 
         // --- optional: Phobius ---
         def pho_ch = EXTRACT_PROTEINS.out.proteins_faa.map { sp, _p -> tuple(sp, no_pho) }
-        if (params.run_phobius) {
+        if (params.run_phobius.toString().toBoolean()) {
             PHOBIUS_RUN(
                 EXTRACT_PROTEINS.out.proteins_faa,
                 channel.value(file(params.phobius_dir, checkIfExists: true))
