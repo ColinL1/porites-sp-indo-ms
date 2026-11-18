@@ -116,3 +116,18 @@ Thumbs.db
 
 docs/CLEANUP.md
 introgression/docs/*.md
+
+
+##---- TEMP -----
+genome-assembly-annotation/plots
+!genome-assembly-annotation/plots/scripts
+
+comparison/plots
+!comparison/plots/scripts
+
+introgression/plots
+!introgression/plots/scripts
+
+species_tree/plots
+!species_tree/plots/scripts
+species_tree/results-nodups
