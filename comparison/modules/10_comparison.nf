@@ -155,6 +155,56 @@ process FUNANNOTATE_GENE_IDS {
 }
 
 // ============================================================
+// Process: PROTEINORTHO_NOSYNTENY
+// The ProteinOrtho table for `funannotate compare` without -synteny (compare itself always adds it,
+// and that step did not finish on fragmented assemblies, see FUNANNOTATE_COMPARE). Protein files
+// are written by compare's own code (bin/gbk_to_proteinortho.py), then proteinortho runs with the
+// call compare makes minus -synteny. The table goes back to compare with --proteinortho.
+// ============================================================
+process PROTEINORTHO_NOSYNTENY {
+    tag   "proteinortho"
+
+    conda 'bioconda::funannotate=1.8.17'
+    container 'quay.io/biocontainers/funannotate:1.8.17--pyhdfd78af_5'
+
+    input:
+    path gbks   // sorted GenBank files, the order compare gets them in
+
+    output:
+    path "protortho_input/funannotate.proteinortho.tsv", emit: tsv
+    path "versions.yml", emit: versions
+
+    script:
+    """
+    check_unique_locus_tags.sh ${gbks}
+
+    gbk_to_proteinortho.py protortho_input ${gbks} > genome_names.txt
+
+    cd protortho_input
+    proteinortho -project=funannotate -cpus=${task.cpus} -singles -selfblast \
+      \$(sed 's/\$/.faa/' ../genome_names.txt | tr '\\n' ' ')
+    cd ..
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        proteinortho: "\$(proteinortho --version 2>&1 | grep -oim1 '[0-9][0-9.]*' | head -1 || echo unknown)"
+        container: "${task.container ?: 'conda'}"
+    END_VERSIONS
+    """
+
+    stub:
+    """
+    mkdir -p protortho_input
+    touch protortho_input/funannotate.proteinortho.tsv
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        proteinortho: "stub"
+    END_VERSIONS
+    """
+}
+
+// ============================================================
 // Process: FUNANNOTATE_COMPARE
 // Comparative genomics across funannotate-annotated genomes (GenBank files
 // written by `funannotate annotate`).
