@@ -128,8 +128,9 @@ process DROP_UNTRANSLATABLE {
 // Process: FUNANNOTATE_GENE_IDS
 // Reshape gene IDs for `funannotate annotate`, which silently drops every Pfam/InterPro/eggNOG/GO
 // annotation ("adding 0 valid annotations") when the gene ID does not fit the base it derives from
-// each protein header "<transcript> <gene>". Rules and the two ID styles handled (NCBI "rna-...",
-// funannotate "g1.t2"): bin/funannotate_gene_ids.sh. Transcript IDs are left alone.
+// each protein header "<transcript> <gene>", and give gene IDs the genome name as prefix so they are
+// unique across genomes (funannotate compare pools by ID). Rules and the two ID styles handled (NCBI
+// "rna-...", funannotate "g1.t2"): bin/funannotate_gene_ids.sh. Transcript IDs are left alone.
 // ============================================================
 process FUNANNOTATE_GENE_IDS {
     tag   "${sp}"
@@ -145,7 +146,7 @@ process FUNANNOTATE_GENE_IDS {
 
     script:
     """
-    funannotate_gene_ids.sh ${gff3} > ${sp}.funannotate.gff3
+    funannotate_gene_ids.sh ${gff3} ${sp} > ${sp}.funannotate.gff3
     """
 
     stub:
@@ -236,6 +237,8 @@ process FUNANNOTATE_COMPARE {
     // No --outgroup: FUNANNOTATE_DB/outgroups only holds fungal BUSCO sets.
     """
     export FUNANNOTATE_DB=\$(readlink -f ${funannotate_db})
+
+    check_unique_locus_tags.sh ${gbks}
 
     funannotate compare \\
       -i ${gbks} \\
