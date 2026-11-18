@@ -80,7 +80,7 @@ workflow {
     phobius      = ANNOTATE_REF.out.phobius
     annotation   = ANNOTATE_REF.out.annotate_dir
     stats        = ANNOTATE_REF.out.stats_json
-    compare      = COMPARE.out.compare_dir
+    compare      = COMPARE.out.compare_dir.flatten()
 }
 
 // ---------------------------------------------------------------- published results
