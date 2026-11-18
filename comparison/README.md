@@ -27,7 +27,7 @@ nextflow run main.nf -profile stub -stub -params-file params/Porites_sp_v1_2.yam
 | funannotate / eggNOG databases | `funannotate_db`, `eggnog_db` | local: GenomeMaker's `config/` (via `../data/GenomeMaker`, see `../data/README.md`) |
 | Phobius (licensed) | `phobius_dir`, `run_phobius` | same |
 | InterProScan data | `interproscan_data` (container) or `interproscan_dir` (local install) | data must match `interproscan_container` (5.73-104.0); with neither set, InterProScan is skipped with a warning. Container only: no conda package matches the 5.73 data, so `-profile conda` needs a local install in `interproscan_dir` |
-| ProteinOrtho | `compare_synteny` (default `true`), `compare_proteinortho` | `false` needs a table made without `-synteny` |
+| ProteinOrtho | `compare_synteny` (default `true`), `compare_proteinortho` | `compare_synteny: false` runs ProteinOrtho without `-synteny` as its own step (`PROTEINORTHO_NOSYNTENY`); `compare_proteinortho` hands in a ready-made table instead |
 | Extra GenBank files | `compare_gbks` | optional, added to the compare |
 | BinAC 2 | `project`, `apptainer_cache_dir` | `params/Porites_sp_v1_2_binac2.yaml` |
 
@@ -85,7 +85,7 @@ Porites-only synteny run finished (2026-10-13); with *A. millepora* added it did
 | *P. evermanni* | 8,186 | 0.2 Mb | 0 |
 
 The new assembly has 14 chromosome-scale scaffolds, so it is not what limits synteny; the three
-fragmented references are. `compare_synteny: false` with a precomputed table is the fallback.
+fragmented references are. `compare_synteny: false` is the fallback.
 
 ## Earlier runs (`archive/`)
 
