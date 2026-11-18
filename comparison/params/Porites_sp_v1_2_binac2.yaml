@@ -1,0 +1,25 @@
+# BinAC 2. Launch from the copy of comparison/ on BinAC 2; every path below is relative to that directory,
+# so put (or link) the data there:
+#   inputs/   release_curation/Porites_sp_v1.2/{genome,annotation} of the new genome
+#   db/       funannotate_DB, eggnog_DB, phobius, interproscan-5.73-104.0/data (as in GenomeMaker's binac2 setup)
+#   nextflow run main.nf -profile binac2 -params-file params/Porites_sp_v1_2_binac2.yaml
+genomes:
+  - name: Porites_sp
+    fasta: inputs/Porites_sp._Indonesia_ID_GA_Por_15.scaffolds.fa
+    gff: inputs/Porites_sp._Indonesia_ID_GA_Por_15.gff3
+  - {name: Porites_harrisoni, accession: GCA_040938025.2}
+  - {name: Porites_lutea, accession: GCF_958299795.1}
+  - {name: Porites_evermanni, accession: GCA_942486025.1}
+  - {name: Porites_lobata, accession: GCA_942486035.1}
+  - {name: Acropora_millepora, accession: GCF_013753865.1}
+
+funannotate_db: db/funannotate_DB
+eggnog_db: db/eggnog_DB
+phobius_dir: db/phobius
+interproscan_data: db/interproscan-5.73-104.0/data
+
+funannotate_force: true      # 5 short simple-repeat scaffolds use 3 bases (no genes on them); as in GenomeMaker porites_binac2.config
+compare_synteny: true
+# project: <BinAC 2 account>   (sbatch -A; unset = -p compute)
+# apptainer_cache_dir: /pfs/10/project/apptainer_cache/<user>   (default in nextflow.config)
+outdir: results/Porites_sp_v1_2
