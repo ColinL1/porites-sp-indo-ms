@@ -4,7 +4,7 @@
 #   db/       funannotate_DB, eggnog_DB, phobius, interproscan-5.73-104.0/data (as in GenomeMaker's binac2 setup)
 #   nextflow run main.nf -profile binac2 -params-file params/Porites_sp_v1_2_binac2.yaml
 genomes:
-  - name: Porites_sp
+  - name: Porites_sp_indonesia
     fasta: inputs/Porites_sp._Indonesia_ID_GA_Por_15.scaffolds.fa
     gff: inputs/Porites_sp._Indonesia_ID_GA_Por_15.gff3
   - {name: Porites_harrisoni, accession: GCA_040938025.2}

@@ -1,9 +1,9 @@
 # Porites sp. Indonesia (isolate ID_GA_Por_15), release v1.2, against the annotated NCBI Porites.
 # Launch from comparison/ (paths are relative to the launch directory; ../data/ holds links, see ../data/README.md):
-#   nextflow run main.nf -profile local -params-file params/Porites_sp_v1_2.yaml
+#   nextflow run main.nf -params-file params/Porites_sp_v1_2.yaml
 # Every genome below gets the same re-annotation (gene models -> eggNOG / InterProScan / Phobius -> funannotate annotate).
 genomes:
-  - name: Porites_sp
+  - name: Porites_sp_indonesia
     fasta: ../data/results_v1.2/release_curation/Porites_sp_v1.2/genome/Porites_sp._Indonesia_ID_GA_Por_15.scaffolds.fa
     gff: ../data/results_v1.2/release_curation/Porites_sp_v1.2/annotation/Porites_sp._Indonesia_ID_GA_Por_15.gff3
   - {name: Porites_harrisoni, accession: GCA_040938025.2}
@@ -13,11 +13,12 @@ genomes:
   # outgroup (RefSeq, same 'complex' clade); remove the line for the Porites-only comparison
   - {name: Acropora_millepora, accession: GCF_013753865.1}
 
-# databases of the local workstation (GenomeMaker's config/ via ../data/GenomeMaker, see ../data/README.md)
+# databases of the local workstation (GenomeMaker's config/ via ../data/GenomeMaker, InterProScan data via
+# ../data/interproscan_data; see ../data/README.md)
 funannotate_db: ../data/GenomeMaker/config/funannotate_DB
 eggnog_db: ../data/GenomeMaker/config/eggnog_DB
 phobius_dir: ../data/GenomeMaker/config/phobius
-interproscan_data: /home/colinl/databases/interproscan/interproscan-5.73-104.0/data
+interproscan_data: ../data/interproscan_data
 
 funannotate_force: true      # 5 short simple-repeat scaffolds use 3 bases (no genes on them); as in GenomeMaker porites_binac2.config
 compare_synteny: true
