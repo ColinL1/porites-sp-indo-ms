@@ -30,6 +30,7 @@ data/*
 !data/README.md
 genome-assembly-annotation/*
 !genome-assembly-annotation/README.md
+!genome-assembly-annotation/porites_binac2.config
 
 # ---- genomic and sequencing data ----
 *.fa
@@ -114,20 +115,27 @@ Thumbs.db
 *credentials*
 .netrc
 
-docs/CLEANUP.md
-introgression/docs/*.md
+# ---- docs folders (any depth): not tracked until cleaned up ----
+docs/
 
+# ---- manuscript supplement (built outside the pipelines) ----
+supplement_ms/
 
-##---- TEMP -----
-genome-assembly-annotation/plots
-!genome-assembly-annotation/plots/scripts
+# ---- plots/: only the scripts are tracked (outputs are rebuilt by run_all.sh) ----
+# "<x>/plots/*" ignores the folder's contents, not the folder, so the !scripts/ exception can apply
+!genome-assembly-annotation/plots/
+genome-assembly-annotation/plots/*
+!genome-assembly-annotation/plots/scripts/
+comparison/plots/*
+!comparison/plots/scripts/
+introgression/plots/*
+!introgression/plots/scripts/
+species_tree/plots/*
+!species_tree/plots/scripts/
+Rplots.pdf
 
-comparison/plots
-!comparison/plots/scripts
-
-introgression/plots
-!introgression/plots/scripts
-
-species_tree/plots
-!species_tree/plots/scripts
-species_tree/results-nodups
+# ---- Word tables for the manuscript: not tracked yet (the dedicated table scripts and their output) ----
+*.docx
+shared/plots/tables_docx.R
+genome-assembly-annotation/plots/scripts/tables.R
+introgression/plots/scripts/tests_table.R
