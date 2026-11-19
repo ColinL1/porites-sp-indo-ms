@@ -1,0 +1,7 @@
+# Final assembly (GenomeMaker results_v1.2, release_curation). Launch from species_tree/:
+#   nextflow run main.nf -params-file params/Porites_sp_v1_2.yaml
+# Paths are relative to the launch directory; ../data/ holds links (see ../data/README.md).
+name: Porites_sp_indonesia
+fasta: ../data/results_v1.2/release_curation/Porites_sp_v1.2/genome/Porites_sp._Indonesia_ID_GA_Por_15.scaffolds.fa
+# busco_dir: <existing BUSCO genome-mode output of the assembly>   (instead of fasta: BUSCO not re-run)
+outdir: results/Porites_sp_v1_2

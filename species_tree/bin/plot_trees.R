@@ -13,7 +13,7 @@ col_diff <- "#c8312b"; col_new <- "#6a3d9a"; col_note <- "grey35"
 
 # "Plobata1_GCA_973946955.1" -> "Porites lobata 1 (GCA_973946955.1)" (acc = FALSE for the tanglegram, where
 # phytools would turn "GCA_" into "GCA "); a tip without an accession is the new assembly
-# ("Porites_sp_nov_indonesia" -> "Porites sp. Indonesia")
+# ("Porites_sp_indonesia" -> "Porites sp. Indonesia")
 genera <- c(P = "Porites", A = "Acropora")
 pretty_tip <- function(tip, acc = TRUE) {
   m <- regmatches(tip, regexec("^([A-Z])([a-z]+)([0-9]*)_(GC[AF]_[0-9.]+)$", tip))[[1]]
