@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fallback when no --new_mito is given: assemble the target mitogenome from the ONT reads that
+# Fallback when no --mito is given: assemble the target mitogenome from the ONT reads that
 # map to the bait (subsampled to 15%, ~200x), Flye --nano-hq. Writes <outdir>/flye/assembly.fasta.
 # usage: mito_from_reads.sh <bait.fasta> <reads.fastq.gz> <outdir> <threads> <flye command>
 set -euo pipefail
